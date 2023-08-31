@@ -3,7 +3,7 @@
 # https://gqlgen.com/getting-started/
 
 type JobListing {
-  id: ID!
+  _id: ID!
   title: String!
   description: String!
   company: String!
