@@ -92,8 +92,12 @@ func (db *DB) UpdateJobListing(id string, input model.UpdateJobListingInput) *mo
 	collection := db.client.Database("jobsDB").Collection("jobListings")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	_id, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": _id}
+
 	var job model.JobListing
-	err := collection.FindOne(ctx, model.JobListing{ID: id}).Decode(&job)
+	err := collection.FindOne(ctx, filter).Decode(&job)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,9 +110,6 @@ func (db *DB) UpdateJobListing(id string, input model.UpdateJobListingInput) *mo
 	if input.URL != nil {
 		job.URL = *input.URL
 	}
-
-	_id, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.M{"_id": _id}
 	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": job})
 	if err != nil {
 		log.Fatal(err)
@@ -123,9 +124,12 @@ func (db *DB) DeleteJobListing(id string) *model.DeleteJobResponse {
 
 	_id, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": _id}
-	_, err := collection.DeleteOne(ctx, filter)
+	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if result.DeletedCount == 0 {
+		return &model.DeleteJobResponse{ID: id, Success: false}
 	}
 	return &model.DeleteJobResponse{ID: id, Success: true}
 }
